@@ -1,4 +1,6 @@
+
 import io
+import os
 from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -10,11 +12,13 @@ st.set_page_config(
 )
 
 st.title("🏷️ Gerador de Etiquetas")
-st.write("Preencha os dados abaixo para gerar as etiquetas no Word.")
+st.write(
+    "Preencha os dados abaixo para gerar a folha de etiquetas no Word com a logo."
+)
 
 with st.form("form_etiquetas"):
-  produto = st.text_input("Nome do Produto", value="Feijão tropeiro")
-  data_fab = st.text_input("Data de Fabricação", value="01/11/2026")
+  produto = st.text_input("Nome do Produto", value="Salpicão")
+  data_fab = st.text_input("Data de Fabricação", value="17/10/2026")
   obs = st.text_input("Observação / Validade", value="Consumo Imediato!")
   empresa = st.text_input("Nome da Empresa", value="Langner Assados")
   peso = st.text_input("Peso / Tamanho", value="250G")
@@ -31,7 +35,7 @@ with st.form("form_etiquetas"):
 if submitted:
   doc = Document()
 
-  # Configurar margens da folha (0,5 polegada)
+  # Ajuste das margens da página
   for section in doc.sections:
     section.top_margin = Inches(0.5)
     section.bottom_margin = Inches(0.5)
@@ -40,8 +44,11 @@ if submitted:
 
   total_linhas = (qtd_total + 1) // 2
   table = doc.add_table(rows=total_linhas, cols=2)
-  table.style = "Table Grid"  # Adiciona a grade/bordas visíveis
+  table.style = "Table Grid"
   table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+  logo_path = "logo.png"  # Certifique-se de que o arquivo no GitHub se chama logo.png
+  has_logo = os.path.exists(logo_path)
 
   count = 0
   for row in table.rows:
@@ -49,10 +56,20 @@ if submitted:
       if count < qtd_total:
         p = cell.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # Adiciona a imagem se ela existir no repositório
+        if has_logo:
+          run_img = p.add_run()
+          run_img.add_picture(
+              logo_path, width=Inches(0.6)
+          )  # Ajuste de tamanho da logo
+          p.add_run("\n")
+
+        # Texto da etiqueta
         texto = f"{produto}\nfáb.{data_fab}\n{obs}\n{empresa}\n{peso}"
-        run = p.add_run(texto)
-        run.font.name = "Californian FB"
-        run.font.size = Pt(16)
+        run_text = p.add_run(texto)
+        run_text.font.name = "Californian FB"
+        run_text.font.size = Pt(14)
         count += 1
       else:
         cell.text = ""
@@ -61,7 +78,7 @@ if submitted:
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success(f"✅ {qtd_total} etiquetas geradas com bordas!")
+  st.success(f"✅ {qtd_total} etiquetas geradas com sucesso!")
   st.download_button(
       label="📄 Baixar Documento Word (.docx)",
       data=buffer,
