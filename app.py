@@ -11,30 +11,61 @@ st.set_page_config(
 
 st.title("🏷️ Gerador de Etiquetas")
 st.write(
-    "Preencha os dados abaixo, envie a logo e ajuste a escala conforme"
-    " necessário."
+    "Preencha os dados abaixo, escolha o peso e ajuste a escala da logo."
 )
 
 with st.form("form_etiquetas"):
-  produto = st.text_input("Nome do Produto", value="Salpicão")
+  produto = st.text_input("Nome do Produto", value="Feijão tropeiro")
   data_fab = st.text_input("Data de Fabricação", value="17/10/2026")
   obs = st.text_input("Observação / Validade", value="Consumo Imediato!")
   empresa = st.text_input("Nome da Empresa", value="Langner Assados")
-  peso = st.text_input("Peso / Tamanho", value="250G")
+
+  # Opções de peso pré-definidas de 100g até 1000g + opção manual
+  opcoes_peso = [
+      "100G",
+      "150G",
+      "200G",
+      "250G",
+      "300G",
+      "350G",
+      "400G",
+      "450G",
+      "500G",
+      "600G",
+      "700G",
+      "800G",
+      "900G",
+      "1000G (1KG)",
+      "Outro (digitar)",
+  ]
+
+  peso_selecionado = st.selectbox(
+      "Peso / Tamanho", opcoes_peso, index=3
+  )  # Padrão selecionado em 250G
+
+  # Caso precise de um peso fora do padrão
+  if peso_selecionado == "Outro (digitar)":
+    peso = st.text_input("Digite o peso personalizado", value="250G")
+  else:
+    peso = peso_selecionado
 
   # Upload da Logo
   logo_file = st.file_uploader(
-      "Envie a imagem da Logo (Opcional - PNG ou JPG)", type=["png", "jpg", "jpeg"]
+      "Envie a imagem da Logo (Opcional - PNG ou JPG)",
+      type=["png", "jpg", "jpeg"],
   )
 
-  # Controle de Escala da Imagem em Polegadas (de 0.3 a 1.5 polegadas)
+  # Controle de Escala da Logo
   tamanho_logo = st.slider(
       "Tamanho / Escala da Logo (em polegadas)",
       min_value=0.3,
       max_value=1.5,
-      value=0.75,
+      value=0.60,
       step=0.05,
-      help="Diminua se o texto ficar muito apertado ou aumente se a imagem estiver pequena.",
+      help=(
+          "Diminua se o texto ficar apertado ou aumente se a imagem estiver"
+          " pequena."
+      ),
   )
 
   qtd_total = st.number_input(
@@ -50,7 +81,7 @@ with st.form("form_etiquetas"):
 if submitted:
   doc = Document()
 
-  # Ajustar margens da página (0,5 polegada)
+  # Configurar margens da página (0,5 polegada)
   for section in doc.sections:
     section.top_margin = Inches(0.5)
     section.bottom_margin = Inches(0.5)
@@ -72,7 +103,7 @@ if submitted:
           sub_table = cell.add_table(rows=1, cols=2)
           sub_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-          # Célula da Esquerda: Logo com tamanho dinâmico definido no slider
+          # Célula da Esquerda: Logo com tamanho dinâmico
           cell_logo = sub_table.rows[0].cells[0]
           cell_logo.width = Inches(tamanho_logo + 0.15)
           p_logo = cell_logo.paragraphs[0]
