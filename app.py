@@ -11,8 +11,8 @@ st.set_page_config(
 
 st.title("🏷️ Gerador de Etiquetas")
 st.write(
-    "Preencha os dados abaixo e adicione a logo para gerar as etiquetas no"
-    " Word."
+    "Preencha os dados abaixo, envie a logo e ajuste a escala conforme"
+    " necessário."
 )
 
 with st.form("form_etiquetas"):
@@ -22,9 +22,19 @@ with st.form("form_etiquetas"):
   empresa = st.text_input("Nome da Empresa", value="Langner Assados")
   peso = st.text_input("Peso / Tamanho", value="250G")
 
-  # Campo para fazer upload da Logo diretamente no site!
+  # Upload da Logo
   logo_file = st.file_uploader(
       "Envie a imagem da Logo (Opcional - PNG ou JPG)", type=["png", "jpg", "jpeg"]
+  )
+
+  # Controle de Escala da Imagem em Polegadas (de 0.3 a 1.5 polegadas)
+  tamanho_logo = st.slider(
+      "Tamanho / Escala da Logo (em polegadas)",
+      min_value=0.3,
+      max_value=1.5,
+      value=0.75,
+      step=0.05,
+      help="Diminua se o texto ficar muito apertado ou aumente se a imagem estiver pequena.",
   )
 
   qtd_total = st.number_input(
@@ -58,22 +68,21 @@ if submitted:
       if count < qtd_total:
         cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
-        # Se houver logo enviada, cria sub-tabela interna para colocar a logo ao lado do texto
         if logo_file is not None:
           sub_table = cell.add_table(rows=1, cols=2)
           sub_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-          # Célula da Esquerda: Logo
+          # Célula da Esquerda: Logo com tamanho dinâmico definido no slider
           cell_logo = sub_table.rows[0].cells[0]
-          cell_logo.width = Inches(0.9)
+          cell_logo.width = Inches(tamanho_logo + 0.15)
           p_logo = cell_logo.paragraphs[0]
           p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
           logo_bytes = io.BytesIO(logo_file.getvalue())
-          p_logo.add_run().add_picture(logo_bytes, width=Inches(0.75))
+          p_logo.add_run().add_picture(logo_bytes, width=Inches(tamanho_logo))
 
           # Célula da Direita: Texto
           cell_text = sub_table.rows[0].cells[1]
-          cell_text.width = Inches(2.3)
+          cell_text.width = Inches(3.2 - (tamanho_logo + 0.15))
           p_text = cell_text.paragraphs[0]
           p_text.alignment = WD_ALIGN_PARAGRAPH.CENTER
           texto = f"{produto}\nfáb.{data_fab}\n{obs}\n{empresa}\n{peso}"
