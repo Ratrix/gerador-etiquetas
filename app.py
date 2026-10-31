@@ -14,7 +14,7 @@ st.write("Preencha os dados abaixo para gerar as etiquetas no Word.")
 
 with st.form("form_etiquetas"):
   produto = st.text_input("Nome do Produto", value="Feijão tropeiro")
-  data_fab = st.text_input("Data de Fabricação", value="31/10/2026")
+  data_fab = st.text_input("Data de Fabricação", value="01/11/2026")
   obs = st.text_input("Observação / Validade", value="Consumo Imediato!")
   empresa = st.text_input("Nome da Empresa", value="Langner Assados")
   peso = st.text_input("Peso / Tamanho", value="250G")
@@ -31,6 +31,7 @@ with st.form("form_etiquetas"):
 if submitted:
   doc = Document()
 
+  # Configurar margens da folha (0,5 polegada)
   for section in doc.sections:
     section.top_margin = Inches(0.5)
     section.bottom_margin = Inches(0.5)
@@ -39,6 +40,7 @@ if submitted:
 
   total_linhas = (qtd_total + 1) // 2
   table = doc.add_table(rows=total_linhas, cols=2)
+  table.style = "Table Grid"  # Adiciona a grade/bordas visíveis
   table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
   count = 0
@@ -52,12 +54,14 @@ if submitted:
         run.font.name = "Californian FB"
         run.font.size = Pt(16)
         count += 1
+      else:
+        cell.text = ""
 
   buffer = io.BytesIO()
   doc.save(buffer)
   buffer.seek(0)
 
-  st.success(f"✅ {qtd_total} etiquetas geradas!")
+  st.success(f"✅ {qtd_total} etiquetas geradas com bordas!")
   st.download_button(
       label="📄 Baixar Documento Word (.docx)",
       data=buffer,
