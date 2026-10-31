@@ -1,8 +1,6 @@
-
 import io
-import os
 from docx import Document
-from docx.enum.table import WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_ALIGN_VERTICAL, WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Inches, Pt
 import streamlit as st
@@ -13,7 +11,8 @@ st.set_page_config(
 
 st.title("🏷️ Gerador de Etiquetas")
 st.write(
-    "Preencha os dados abaixo para gerar a folha de etiquetas no Word com a logo."
+    "Preencha os dados abaixo e adicione a logo para gerar as etiquetas no"
+    " Word."
 )
 
 with st.form("form_etiquetas"):
@@ -22,6 +21,12 @@ with st.form("form_etiquetas"):
   obs = st.text_input("Observação / Validade", value="Consumo Imediato!")
   empresa = st.text_input("Nome da Empresa", value="Langner Assados")
   peso = st.text_input("Peso / Tamanho", value="250G")
+
+  # Campo para fazer upload da Logo diretamente no site!
+  logo_file = st.file_uploader(
+      "Envie a imagem da Logo (Opcional - PNG ou JPG)", type=["png", "jpg", "jpeg"]
+  )
+
   qtd_total = st.number_input(
       "Quantidade total de etiquetas",
       min_value=1,
@@ -35,7 +40,7 @@ with st.form("form_etiquetas"):
 if submitted:
   doc = Document()
 
-  # Ajuste das margens da página
+  # Ajustar margens da página (0,5 polegada)
   for section in doc.sections:
     section.top_margin = Inches(0.5)
     section.bottom_margin = Inches(0.5)
@@ -43,33 +48,47 @@ if submitted:
     section.right_margin = Inches(0.5)
 
   total_linhas = (qtd_total + 1) // 2
-  table = doc.add_table(rows=total_linhas, cols=2)
-  table.style = "Table Grid"
-  table.alignment = WD_TABLE_ALIGNMENT.CENTER
-
-  logo_path = "logo.png"  # Certifique-se de que o arquivo no GitHub se chama logo.png
-  has_logo = os.path.exists(logo_path)
+  main_table = doc.add_table(rows=total_linhas, cols=2)
+  main_table.style = "Table Grid"
+  main_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
   count = 0
-  for row in table.rows:
+  for row in main_table.rows:
     for cell in row.cells:
       if count < qtd_total:
-        p = cell.paragraphs[0]
-        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
-        # Adiciona a imagem se ela existir no repositório
-        if has_logo:
-          run_img = p.add_run()
-          run_img.add_picture(
-              logo_path, width=Inches(0.6)
-          )  # Ajuste de tamanho da logo
-          p.add_run("\n")
+        # Se houver logo enviada, cria sub-tabela interna para colocar a logo ao lado do texto
+        if logo_file is not None:
+          sub_table = cell.add_table(rows=1, cols=2)
+          sub_table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
-        # Texto da etiqueta
-        texto = f"{produto}\nfáb.{data_fab}\n{obs}\n{empresa}\n{peso}"
-        run_text = p.add_run(texto)
-        run_text.font.name = "Californian FB"
-        run_text.font.size = Pt(14)
+          # Célula da Esquerda: Logo
+          cell_logo = sub_table.rows[0].cells[0]
+          cell_logo.width = Inches(0.9)
+          p_logo = cell_logo.paragraphs[0]
+          p_logo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+          logo_bytes = io.BytesIO(logo_file.getvalue())
+          p_logo.add_run().add_picture(logo_bytes, width=Inches(0.75))
+
+          # Célula da Direita: Texto
+          cell_text = sub_table.rows[0].cells[1]
+          cell_text.width = Inches(2.3)
+          p_text = cell_text.paragraphs[0]
+          p_text.alignment = WD_ALIGN_PARAGRAPH.CENTER
+          texto = f"{produto}\nfáb.{data_fab}\n{obs}\n{empresa}\n{peso}"
+          run = p_text.add_run(texto)
+          run.font.name = "Californian FB"
+          run.font.size = Pt(13)
+        else:
+          # Sem logo: Texto centralizado na célula inteira
+          p = cell.paragraphs[0]
+          p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+          texto = f"{produto}\nfáb.{data_fab}\n{obs}\n{empresa}\n{peso}"
+          run = p.add_run(texto)
+          run.font.name = "Californian FB"
+          run.font.size = Pt(15)
+
         count += 1
       else:
         cell.text = ""
